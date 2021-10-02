@@ -31,10 +31,17 @@ spec:
         - '-c'
         - >
           rm -rfv /var/jenkins_home/lost+found;
-          chmod -R 777 /var/jenkins_home
+          chmod -R 777 /var/jenkins_home;
+          rm -rfv /etc/docker/lost+found;
+          touch /etc/docker/daemon.json;
+          chmod a+w /etc/docker/daemon.json;
+          json='{ "insecure-registries":["docker-registry:5000"] }';
+          echo $json >> /etc/docker/daemon.json;
         volumeMounts:
         - mountPath: "/var/jenkins_home"
           name: jenkins-home
+        - mountPath: "/etc/docker"
+          name: docker
       containers:
       - name: dind-daemon
         image: "{{ .Values.did.image.repository }}:{{ .Values.did.image.tag }}"
@@ -47,6 +54,8 @@ spec:
           mountPath: "/var/lib/docker"
         - name: jenkins-home
           mountPath: "/var/jenkins_home"
+        - name: docker
+          mountPath: "/etc/docker"
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -55,6 +64,8 @@ spec:
         volumeMounts:
         - name: jenkins-home
           mountPath: "/var/jenkins_home"
+        - name: docker
+          mountPath: "/etc/docker"
         env:
         - name: DOCKER_HOST
           value: tcp://localhost:2375
@@ -92,3 +103,4 @@ spec:
     {{- else }}
         emptyDir: {}
     {{- end }}
+      - name: docker
